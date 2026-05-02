@@ -23,6 +23,7 @@ function App() {
             <Topbar />
             <Routes>
               <Route path="/" element={<DashboardPage />} />
+              <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/projects" element={<ProjectsPage />} />
               <Route path="/projects/:id" element={<ProjectPage />} />
               <Route path="/tasks" element={<TasksPage />} />
