@@ -11,7 +11,7 @@ const navItems = [
 ];
 
 function Sidebar() {
-  const { user, logout } = useAuth();
+  const { user, role, logout } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -33,7 +33,7 @@ function Sidebar() {
               <div>
                 <p className="text-sm uppercase tracking-[0.24em] text-slate-500">Signed in as</p>
                 <p className="mt-1 text-lg font-semibold text-white">{user?.name}</p>
-                <p className="text-xs uppercase tracking-[0.18em] text-slate-400">{user?.role}</p>
+                <p className="text-xs uppercase tracking-[0.18em] text-slate-400">{role || user?.role}</p>
               </div>
             </div>
           </div>

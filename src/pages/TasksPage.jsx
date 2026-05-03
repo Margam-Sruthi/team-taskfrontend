@@ -11,7 +11,7 @@ const statusStyles = {
 };
 
 function TasksPage() {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
@@ -119,7 +119,7 @@ function TasksPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  {user?.role === 'Admin' && (
+                  {isAdmin && (
                     <button onClick={() => deleteTask(task._id)} className="rounded-2xl bg-rose-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-rose-600">
                       Delete task
                     </button>

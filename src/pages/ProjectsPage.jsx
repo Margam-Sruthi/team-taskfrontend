@@ -9,17 +9,26 @@ function ProjectsPage() {
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState(null);
-  const { user } = useAuth();
+  const { user, role, isAdmin } = useAuth();
+
+  const visibleProjects = isAdmin
+    ? projects
+    : projects.filter((project) => project.members?.some((member) => member._id === user?._id));
 
   const loadProjects = async () => {
     const data = await request('/projects');
-    setProjects(Array.isArray(data) ? data : []);
+    const loadedProjects = Array.isArray(data) ? data : [];
+    setProjects(loadedProjects);
+    const visibleCount = isAdmin
+      ? loadedProjects.length
+      : loadedProjects.filter((project) => project.members?.some((member) => member._id === user?._id)).length;
+    console.log('[ProjectsPage] role:', role, 'projects loaded:', loadedProjects.length, 'visibleProjects:', visibleCount);
     setLoading(false);
   };
 
   useEffect(() => {
     loadProjects();
-  }, []);
+  }, [role]);
 
   const createProject = async (event) => {
     event.preventDefault();
@@ -44,7 +53,7 @@ function ProjectsPage() {
             <h2 className="mt-2 text-3xl font-semibold text-slate-900">Your active projects</h2>
             <p className="mt-3 max-w-2xl text-slate-500">Organize work by project, add new initiatives, and keep the team aligned.</p>
           </div>
-          {user?.role === 'Admin' && (
+          {isAdmin && (
             <button onClick={() => document.getElementById('project-form').scrollIntoView({ behavior: 'smooth' })} className="rounded-2xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-indigo-700">
               Add project
             </button>
@@ -54,7 +63,7 @@ function ProjectsPage() {
 
       {message && <div className="rounded-3xl bg-slate-50 p-5 text-slate-700 shadow-sm">{message}</div>}
 
-      {user?.role === 'Admin' && (
+      {isAdmin && (
         <form id="project-form" className="rounded-[2rem] bg-white p-8 shadow-lg shadow-slate-200/40" onSubmit={createProject}>
           <div className="grid gap-4 sm:grid-cols-[1fr_auto]">
             <label className="space-y-3">
@@ -67,10 +76,12 @@ function ProjectsPage() {
       )}
 
       <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-        {projects.length === 0 ? (
-          <div className="rounded-[2rem] bg-white p-8 text-slate-600 shadow-lg shadow-slate-200/40">No projects yet.</div>
+        {visibleProjects.length === 0 ? (
+          <div className="rounded-[2rem] bg-white p-8 text-slate-600 shadow-lg shadow-slate-200/40">
+            {isAdmin ? 'No projects yet.' : 'No projects assigned to you.'}
+          </div>
         ) : (
-          projects.map((project) => (
+          visibleProjects.map((project) => (
             <Link key={project._id} to={`/projects/${project._id}`} className="group overflow-hidden rounded-[2rem] bg-white shadow-lg shadow-slate-200/40 transition hover:-translate-y-1 hover:shadow-2xl">
               <div className="h-40 bg-gradient-to-r from-indigo-600 via-slate-900 to-slate-700 px-6 py-5 text-white">
                 <p className="text-xs uppercase tracking-[0.32em] text-indigo-200">Project</p>

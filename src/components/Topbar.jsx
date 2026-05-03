@@ -3,7 +3,7 @@ import { LogOut, Search } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 function Topbar() {
-  const { user, logout } = useAuth();
+  const { user, role, logout } = useAuth();
 
   return (
     <div className="mb-6 rounded-[2rem] bg-white px-6 py-5 shadow-lg shadow-slate-200/60">
@@ -22,7 +22,7 @@ function Topbar() {
             <Avatar name={user?.name || 'Team'} size="34" round={true} textSizeRatio={2.5} />
             <div className="text-left">
               <p className="text-sm font-semibold">{user?.name}</p>
-              <p className="text-xs text-slate-400">{user?.role}</p>
+              <p className="text-xs text-slate-400">{role || user?.role}</p>
             </div>
           </div>
           <button onClick={logout} className="inline-flex items-center gap-2 rounded-2xl bg-indigo-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-indigo-700">

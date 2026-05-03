@@ -10,9 +10,14 @@ import TeamPage from './pages/TeamPage';
 import NotFoundPage from './pages/NotFoundPage';
 import Sidebar from './components/Sidebar';
 import Topbar from './components/Topbar';
+import Loader from './components/Loader';
 
 function App() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return <Loader />;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-100 via-slate-200 to-sky-100 text-slate-900">

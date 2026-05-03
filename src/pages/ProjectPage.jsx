@@ -7,7 +7,7 @@ import { useAuth } from '../context/AuthContext';
 
 function ProjectPage() {
   const { id } = useParams();
-  const { user } = useAuth();
+  const { user, role, isAdmin } = useAuth();
   const [project, setProject] = useState(null);
   const [tasks, setTasks] = useState([]);
   const [users, setUsers] = useState([]);
@@ -15,10 +15,17 @@ function ProjectPage() {
   const [taskData, setTaskData] = useState({ title: '', description: '', assignedTo: '', deadline: '' });
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
 
   const loadProject = async () => {
-    const data = await request(`/projects/${id}`);
-    setProject(data._id ? data : null);
+    try {
+      const data = await request(`/projects/${id}`);
+      setProject(data._id ? data : null);
+      setError('');
+    } catch (err) {
+      setProject(null);
+      setError(err.message || 'Unable to load project');
+    }
   };
 
   const loadTasks = async () => {
@@ -27,7 +34,7 @@ function ProjectPage() {
   };
 
   const loadUsers = async () => {
-    if (user?.role !== 'Admin') return;
+    if (!isAdmin) return;
     const data = await request('/users');
     setUsers(Array.isArray(data) ? data : []);
   };
@@ -40,11 +47,11 @@ function ProjectPage() {
       setLoading(false);
     };
     fetchData();
-  }, [id, user?.role]);
+  }, [id, isAdmin]);
 
   const addMember = async (event) => {
     event.preventDefault();
-    const data = await request(`/projects/${id}/members`, 'POST', { memberId });
+    const data = await request('/projects/assign', 'POST', { projectId: id, memberId });
     if (data._id) {
       setProject(data);
       setMemberId('');
@@ -73,7 +80,7 @@ function ProjectPage() {
   };
 
   if (loading) return <Loader />;
-  if (!project) return <div className="rounded-[2rem] bg-white p-8 shadow-lg shadow-slate-200/40">Project not found.</div>;
+  if (!project) return <div className="rounded-[2rem] bg-white p-8 shadow-lg shadow-slate-200/40">{error || 'Project not found.'}</div>;
 
   return (
     <div className="space-y-8">
@@ -103,7 +110,7 @@ function ProjectPage() {
 
       {message && <div className="rounded-3xl bg-slate-50 p-5 text-slate-700 shadow-sm">{message}</div>}
 
-      {user?.role === 'Admin' && (
+      {isAdmin && (
         <div className="grid gap-6 lg:grid-cols-2">
           <form className="rounded-[2rem] bg-white p-8 shadow-lg shadow-slate-200/40" onSubmit={addMember}>
             <h3 className="mb-4 text-xl font-semibold text-slate-900">Add a team member</h3>

@@ -6,13 +6,14 @@ function SignupPage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [role, setRole] = useState('member');
   const { signup, error, setError } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError(null);
-    const data = await signup(name, email, password);
+    const data = await signup(name, email, password, role);
     if (data.token) {
       navigate('/');
     }
@@ -37,6 +38,14 @@ function SignupPage() {
               <div>
                 <label className="mb-2 block text-sm font-semibold text-slate-700">Password</label>
                 <input value={password} onChange={(e) => setPassword(e.target.value)} type="password" required className="w-full rounded-3xl border border-slate-200 bg-slate-50 px-5 py-4 text-sm text-slate-900 outline-none transition focus:border-indigo-500" />
+              </div>
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-slate-700">Role</label>
+                <select value={role} onChange={(e) => setRole(e.target.value)} className="w-full rounded-3xl border border-slate-200 bg-slate-50 px-5 py-4 text-sm text-slate-900 outline-none transition focus:border-indigo-500">
+                  <option value="member">Member</option>
+                  <option value="admin">Admin</option>
+                </select>
+                <p className="mt-2 text-xs text-slate-500">If not changed, default role will be Member.</p>
               </div>
               {error && <div className="rounded-3xl bg-rose-100 px-4 py-3 text-sm text-rose-700">{error}</div>}
               <button className="w-full rounded-3xl bg-indigo-600 px-5 py-4 text-sm font-semibold text-white transition hover:bg-indigo-700">Sign up</button>

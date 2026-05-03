@@ -2,19 +2,28 @@ import { useEffect, useMemo, useState } from 'react';
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { request } from '../services/api';
 import Loader from '../components/Loader';
+import { useAuth } from '../context/AuthContext';
 
 function DashboardPage() {
+  const { user, role, isAdmin } = useAuth();
   const [tasks, setTasks] = useState([]);
+  const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  const visibleProjects = isAdmin
+    ? projects
+    : projects.filter((project) => project.members?.some((member) => member._id === user?._id));
+
   useEffect(() => {
-    const loadTasks = async () => {
-      const data = await request('/tasks');
-      setTasks(Array.isArray(data) ? data : []);
+    const loadData = async () => {
+      const [taskResponse, projectResponse] = await Promise.all([request('/tasks'), request('/projects')]);
+      setTasks(Array.isArray(taskResponse) ? taskResponse : []);
+      setProjects(Array.isArray(projectResponse) ? projectResponse : []);
+      console.log('[Dashboard] role:', role, 'loaded projects:', projectResponse?.length, 'visibleProjects:', visibleProjects.length);
       setLoading(false);
     };
-    loadTasks();
-  }, []);
+    loadData();
+  }, [role, isAdmin, user?._id]);
 
   const stats = useMemo(() => {
     const total = tasks.length;
@@ -62,6 +71,7 @@ function DashboardPage() {
           { label: 'Completed', value: stats.completed, color: 'bg-emerald-500' },
           { label: 'Pending', value: stats.pending, color: 'bg-amber-500' },
           { label: 'Overdue', value: stats.overdue, color: 'bg-rose-500' },
+          { label: isAdmin ? 'All projects' : 'Assigned projects', value: visibleProjects.length, color: 'bg-slate-500' },
         ].map((card) => (
           <div key={card.label} className="rounded-[1.75rem] bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-lg">
             <div className={`inline-flex h-12 w-12 items-center justify-center rounded-2xl text-white ${card.color}`}>

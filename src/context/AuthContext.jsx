@@ -8,22 +8,45 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const setAuthData = (data) => {
+    const normalizedRole = data.role?.toLowerCase();
+    const allowedRoles = ['admin', 'member'];
+
+    if (!allowedRoles.includes(normalizedRole)) {
+      throw new Error('Invalid role received from authentication response');
+    }
+
+    localStorage.setItem('ttm_role', normalizedRole);
+    setUser({ _id: data._id, name: data.name, email: data.email, role: normalizedRole });
+    setError(null);
+  };
+
+  const clearAuthData = () => {
+    localStorage.removeItem('ttm_token');
+    localStorage.removeItem('ttm_role');
+    localStorage.removeItem('role');
+    setUser(null);
+    setError(null);
+  };
+
   const loadUser = async () => {
     const token = localStorage.getItem('ttm_token');
     if (!token) {
+      clearAuthData();
       setLoading(false);
       return;
     }
 
     try {
       const data = await request('/auth/me');
+      console.log('[Auth] loadUser response:', data);
       if (data._id) {
-        setUser(data);
+        setAuthData(data);
       } else {
-        localStorage.removeItem('ttm_token');
+        clearAuthData();
       }
     } catch (err) {
-      localStorage.removeItem('ttm_token');
+      clearAuthData();
       setError(err.message || 'Session expired');
     } finally {
       setLoading(false);
@@ -39,12 +62,9 @@ export const AuthProvider = ({ children }) => {
       const data = await authRequest('/auth/login', 'POST', { email, password });
       if (data.token) {
         localStorage.setItem('ttm_token', data.token);
+        setAuthData(data);
+        console.log('[Auth] login stored role:', data.role, 'token:', !!data.token);
         setError(null);
-        if (data.user) {
-          setUser(data.user);
-        } else {
-          await loadUser();
-        }
       }
       return data;
     } catch (err) {
@@ -54,17 +74,14 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const signup = async (name, email, password) => {
+  const signup = async (name, email, password, role = 'member') => {
     try {
-      const data = await authRequest('/auth/signup', 'POST', { name, email, password });
+      const data = await authRequest('/auth/signup', 'POST', { name, email, password, role });
       if (data.token) {
         localStorage.setItem('ttm_token', data.token);
+        setAuthData(data);
+        console.log('[Auth] signup stored role:', data.role, 'token:', !!data.token);
         setError(null);
-        if (data.user) {
-          setUser(data.user);
-        } else {
-          await loadUser();
-        }
       }
       return data;
     } catch (err) {
@@ -75,12 +92,14 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
-    localStorage.removeItem('ttm_token');
-    setUser(null);
+    clearAuthData();
   };
 
+  const role = user?.role || null;
+  const isAdmin = role === 'admin';
+
   return (
-    <AuthContext.Provider value={{ user, loading, error, login, signup, logout, setError }}>
+    <AuthContext.Provider value={{ user, role, isAdmin, loading, error, login, signup, logout, setError }}>
       {children}
     </AuthContext.Provider>
   );

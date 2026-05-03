@@ -5,10 +5,13 @@ import { useAuth } from '../context/AuthContext';
 import Loader from '../components/Loader';
 
 function TeamPage() {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const [users, setUsers] = useState([]);
   const [projects, setProjects] = useState([]);
   const [tasks, setTasks] = useState([]);
+  const [selectedProject, setSelectedProject] = useState('');
+  const [selectedMember, setSelectedMember] = useState('');
+  const [assignMessage, setAssignMessage] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -18,7 +21,7 @@ function TeamPage() {
       setTasks(Array.isArray(taskResponse) ? taskResponse : []);
       setProjects(Array.isArray(projectResponse) ? projectResponse : []);
 
-      if (user?.role === 'Admin') {
+      if (isAdmin) {
         const userResponse = await request('/users');
         setUsers(Array.isArray(userResponse) ? userResponse : []);
       } else {
@@ -39,6 +42,33 @@ function TeamPage() {
     };
     loadData();
   }, [user]);
+
+  const assignProject = async (event) => {
+    event.preventDefault();
+    setAssignMessage('');
+
+    if (!selectedProject || !selectedMember) {
+      setAssignMessage('Please select both a project and a member.');
+      return;
+    }
+
+    try {
+      const data = await request('/projects/assign', 'POST', {
+        projectId: selectedProject,
+        memberId: selectedMember,
+      });
+      if (data._id) {
+        setAssignMessage('Member assigned to project successfully.');
+        setSelectedProject('');
+        setSelectedMember('');
+        setProjects((current) => current.map((project) => (project._id === data._id ? data : project)));
+      } else {
+        setAssignMessage(data.message || 'Assignment failed.');
+      }
+    } catch (err) {
+      setAssignMessage(err.message || 'Assignment failed.');
+    }
+  };
 
   const metrics = useMemo(() => {
     const totalTasks = tasks.length;
@@ -100,6 +130,54 @@ function TeamPage() {
         </div>
       </div>
 
+      {isAdmin && (
+        <div className="rounded-[2rem] bg-white p-8 shadow-sm">
+          <div className="mb-6 flex flex-col gap-2">
+            <h3 className="text-xl font-semibold text-slate-900">Assign project member</h3>
+            <p className="text-sm text-slate-500">Select a project and a team member to assign them.</p>
+          </div>
+          <form onSubmit={assignProject} className="space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className="space-y-2">
+                <span className="text-sm font-medium text-slate-700">Project</span>
+                <select
+                  value={selectedProject}
+                  onChange={(event) => setSelectedProject(event.target.value)}
+                  className="w-full rounded-3xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-indigo-500"
+                >
+                  <option value="">Select a project</option>
+                  {projects.map((project) => (
+                    <option key={project._id} value={project._id}>{project.name}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="space-y-2">
+                <span className="text-sm font-medium text-slate-700">Member</span>
+                <select
+                  value={selectedMember}
+                  onChange={(event) => setSelectedMember(event.target.value)}
+                  className="w-full rounded-3xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-indigo-500"
+                >
+                  <option value="">Select a member</option>
+                  {users
+                    .filter((member) => member.role === 'member')
+                    .map((member) => (
+                      <option key={member._id} value={member._id}>{member.name}</option>
+                    ))}
+                </select>
+              </label>
+            </div>
+            {assignMessage && <p className="text-sm text-rose-600">{assignMessage}</p>}
+            <button
+              type="submit"
+              className="inline-flex items-center justify-center rounded-3xl bg-indigo-600 px-6 py-3 text-sm font-semibold text-white transition hover:bg-indigo-700"
+            >
+              Assign member
+            </button>
+          </form>
+        </div>
+      )}
+
       <div className="grid gap-6 xl:grid-cols-[0.7fr_1.3fr]">
         <div className="rounded-[2rem] bg-white p-8 shadow-sm">
           <div className="mb-6 flex items-center justify-between">
@@ -145,7 +223,7 @@ function TeamPage() {
             <p className="mt-1 text-sm text-slate-500">Overview of team roles and responsibilities.</p>
           </div>
           <div className="space-y-4">
-            {['Admin', 'Member'].map((roleKey) => {
+            {['admin', 'member'].map((roleKey) => {
               const roleCount = users.filter((member) => member.role === roleKey).length;
               const roleWidth = users.length ? Math.max(12, Math.min(100, Math.round((roleCount / users.length) * 100))) : 0;
               return (
