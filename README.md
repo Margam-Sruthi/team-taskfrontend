@@ -1,7 +1,7 @@
 # Team Task Manager
 
 ## 🔗 Live Demo
-Frontend: https://your-vercel-link  
+Frontend: https://team-taskfrontend-1olv.vercel.app
 Backend: https://team-taskbackend-production.up.railway.app  
 
 ---
